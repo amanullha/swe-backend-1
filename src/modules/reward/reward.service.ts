@@ -79,8 +79,8 @@ export class RewardService {
     }
 
     // Retrieve the current timestamp and compare it with the end date of the reward to determine if it has expired.    const now = Date.now();
-    const startDate = new Date(reward.startDate).getTime();
-    const endDate = new Date(reward.endDate).getTime();
+    const startDate = new Date(reward?.startDate).getTime();
+    const endDate = new Date(reward?.endDate).getTime();
     const now = new Date().getTime();
 
     // If the reward has not yet started, raise an exception to indicate that it is not yet active.

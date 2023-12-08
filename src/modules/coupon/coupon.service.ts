@@ -13,6 +13,8 @@ import { Between } from 'typeorm';
 import { ExceptionHelper } from 'src/common/helpers/exception.helper';
 import { IPlayerCoupon } from './interface/couponPlayer.interface';
 import { NestHelper } from 'src/common/helpers/Nest.helper';
+import { Player } from 'src/entities/Player';
+import { Reward } from 'src/entities/Reward';
 
 @Injectable()
 export class CouponService {
@@ -47,13 +49,28 @@ export class CouponService {
     const redeem = await this.couponAlreadyRedeemed(player, reward);
 
     if (redeem == false) {
-      const coupon = {
-        player: player,
-        reward: reward,
-        redeemedAt: new Date(),
-      };
+      const coupon = await this.getCoupon(reward);
+
       return this.addPlayerCoupon(player, coupon);
+    } else {
+      ExceptionHelper.getInstance().defaultError(
+        'Already redeem coupon',
+        'Already_redeem_coupon',
+        HttpStatus.BAD_REQUEST,
+      );
     }
+  }
+  private async getCoupon(reward: IReward): Promise<ICoupon> {
+    const couponObj = {
+      value: String(this.getRandomInt(1, 100)),
+      Reward: reward,
+    };
+    const coupon = await this.couponRepository.save(couponObj);
+    return coupon;
+  }
+
+  getRandomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
   }
 
   async alreadyRedeemCoupon(player: IPlayer, reward: IReward) {}
@@ -80,7 +97,7 @@ export class CouponService {
       },
     });
 
-    if (NestHelper.getInstance().isEmpty(redeemedCoupon)) {
+    if (!NestHelper.getInstance().isEmpty(redeemedCoupon)) {
       return true;
     } else {
       return false;
@@ -96,41 +113,34 @@ export class CouponService {
   private async addPlayerCoupon(
     player: IPlayer,
     coupon: ICoupon,
-  ): Promise<void> {
-    const playerCoupon = this.createPlayerCouponEntity(player, coupon);
-    await this.savePlayerCouponEntity(playerCoupon);
-  }
-
-  /**
-   * Creates a new PlayerCoupon entity.
-   *
-   * @param playerId - The unique identifier of the player.
-   * @param couponId - The unique identifier of the coupon.
-   * @returns The newly created PlayerCoupon entity.
-   */
-  private createPlayerCouponEntity(
-    player: IPlayer,
-    coupon: ICoupon,
-  ): IPlayerCoupon {
-    const now = new Date();
-
-    return this.playerCouponRepository.create({
-      player: player,
-      coupon: coupon,
-      redeemedAt: now,
-    });
-  }
-
-  /**
-   * Saves a PlayerCoupon entity to the database.
-   *
-   * @param playerCoupon - The PlayerCoupon entity to be saved.
-   * @returns The saved PlayerCoupon entity.
-   */
-  private async savePlayerCouponEntity(
-    playerCoupon: IPlayerCoupon,
   ): Promise<IPlayerCoupon> {
-    return this.playerCouponRepository.save(playerCoupon);
+    const now = new Date();
+    const playerObj: Player = {
+      id: player.id,
+      name: player.name,
+    };
+    const reward: Reward = {
+      id: coupon.Reward.id,
+      name: coupon.Reward.name,
+      startDate: coupon.Reward.startDate,
+      endDate: coupon.Reward.endDate,
+      perDayLimit: coupon.Reward.perDayLimit,
+      totalLimit: coupon.Reward.totalLimit,
+    };
+    const couponObj: Coupon = {
+      id: coupon.id,
+      value: coupon.value,
+      Reward: reward,
+    };
+
+    let playerCouponObj = {
+      player: playerObj,
+      coupon: couponObj,
+      redeemedAt: now,
+    };
+    let playerCoupon: IPlayerCoupon =
+      await this.playerCouponRepository.save(playerCouponObj);
+    return playerCoupon;
   }
 
   /**
