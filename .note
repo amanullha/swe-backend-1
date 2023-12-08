@@ -1,0 +1,2 @@
+    "migration:run": "typeorm=true npm run typeorm migration:run -- -d ./src/typeorm.ts",
+if you get an error then remove typeorm=true fro package.json file
